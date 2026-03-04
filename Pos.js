@@ -24,14 +24,14 @@ function viewInventory() {
   console.log("ID | Item Name              | Price   | Stock ");
   console.log("===============================================");
 
-  for (let i = 0; i < inventoryNames.length; i++) {
+  for (let i = 0; i < inventoryNames.length; i++) { //loops through all products.The .length gets number of items
     let priceFormatted = "$" + inventoryPrices[i].toFixed(2);
 
     console.log(
       i + "  | " + //the index,i.e, from zero
       inventoryNames[i] + "--------| " + //e.g the coffe
       priceFormatted + " | " +  //prints as $40.00
-      inventoryStock[i]
+      inventoryStock[i] //prinst how many remains e.g 10
     );
   }
 

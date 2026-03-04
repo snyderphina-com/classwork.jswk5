@@ -48,6 +48,8 @@ function viewInventory() {
 // ======================================
 // MODULE C: PROCESS SALE
 // ======================================
+
+
 function processSale(itemIndex, quantityRequested) {
 
   if (itemIndex < 0 || itemIndex >= inventoryNames.length) {
@@ -65,7 +67,8 @@ function processSale(itemIndex, quantityRequested) {
     return;
   }
 
-  let subtotal = inventoryPrices[itemIndex] * quantityRequested;
+  let unitPrice = inventoryPrices[itemIndex];   // ← store price
+  let subtotal = unitPrice * quantityRequested;
   let taxAmount = subtotal * taxRate;
   let grandTotal = subtotal + taxAmount;
 
@@ -74,12 +77,14 @@ function processSale(itemIndex, quantityRequested) {
 
   console.log("\n====== RECEIPT ======");
   console.log("Item: " + inventoryNames[itemIndex]);
+  console.log("Unit Price: $" + unitPrice.toFixed(2));   // ✅ NEW LINE
   console.log("Quantity: " + quantityRequested);
   console.log("Subtotal: $" + subtotal.toFixed(2));
   console.log("Tax: $" + taxAmount.toFixed(2));
   console.log("Total: $" + grandTotal.toFixed(2));
   console.log("=====================\n");
 }
+
 
 
 // ======================================
