@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Legacy-Sync POS v4.0</title>
+  <style>
+    body { font-family: Arial; background:#f4f4f4; padding:20px; }
+    h2 { text-align:center; }
+    table { border-collapse: collapse; width: 100%; margin-bottom:20px; background:white; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    th { background:#333; color:white; }
+    .lowStock { background:#ffcccc; }
+    input, button { padding:8px; margin:5px; }
+    button { cursor:pointer; background:#333; color:white; border:none; }
+    button:hover { background:#555; }
+    .section { margin-bottom:30px; }
+    .box { background:white; padding:15px; border-radius:5px; }
+  </style>
+</head>
+<body>
+
+<h2>Legacy-Sync POS Engine v4.0</h2>
+
+<div class="section box">
+  <h3>Inventory</h3>
+  <div id="inventorySection"></div>
+</div>
+
+<div class="section box">
+  <h3>Add To Cart</h3>
+  <input type="text" id="barcodeInput" placeholder="Barcode">
+  <input type="number" id="quantityInput" placeholder="Quantity">
+  <button onclick="addToCart()">Add</button>
+</div>
+
+<div class="section box">
+  <h3>Cart</h3>
+  <div id="cartSection"></div>
+  <button onclick="checkout()">Checkout</button>
+</div>
+
+<div class="section box">
+  <h3>Manager Audit</h3>
+  <input type="password" id="managerPass" placeholder="Password">
+  <button onclick="managerAudit()">Login</button>
+  <p id="auditResult"></p>
+</div>
+
+<script>
+
+// ==========================
+// LOAD OR INITIALIZE STORAGE
+// ==========================
+let inventoryNames = JSON.parse(localStorage.getItem("names")) || [
+  "Espresso Machine",
+  "Whole Bean Coffee",
+  "Industrial Drill",
+  "LED Monitor",
+  "Office Chair"
+];
+
+let inventoryPrices = JSON.parse(localStorage.getItem("prices")) || [250,18.5,120,200,150];
+let inventoryStock = JSON.parse(localStorage.getItem("stock")) || [5,40,10,8,15];
+let inventoryBarcodes = JSON.parse(localStorage.getItem("barcodes")) || ["1001","1002","1003","1004","1005"];
+
+let storeRevenue = Number(localStorage.getItem("revenue")) || 0;
+
+const taxRate = 0.075;
+
+// CART ARRAYS (parallel)
+let cartIndexes = [];
+let cartQuantities = [];
+
+
+// ==========================
+// SAVE STATE
+// ==========================
+function saveData() {
+  localStorage.setItem("names", JSON.stringify(inventoryNames));
+  localStorage.setItem("prices", JSON.stringify(inventoryPrices));
+  localStorage.setItem("stock", JSON.stringify(inventoryStock));
+  localStorage.setItem("barcodes", JSON.stringify(inventoryBarcodes));
+  localStorage.setItem("revenue", storeRevenue);
+}
+
+
+// ==========================
+// VIEW INVENTORY
+// ==========================
+function viewInventory() {
+
+  let html = "<table>";
+  html += "<tr><th>ID</th><th>Name</th><th>Barcode</th><th>Price</th><th>Stock</th></tr>";
+
+  for (let i = 0; i < inventoryNames.length; i++) {
+
+    let rowClass = "";
+    if (inventoryStock[i] <= 3) {
+      rowClass = "class='lowStock'";
+    }
+
+    html += "<tr " + rowClass + ">";
+    html += "<td>"+i+"</td>";
+    html += "<td>"+inventoryNames[i]+"</td>";
+    html += "<td>"+inventoryBarcodes[i]+"</td>";
+    html += "<td>$"+inventoryPrices[i].toFixed(2)+"</td>";
+    html += "<td>"+inventoryStock[i]+"</td>";
+    html += "</tr>";
+  }
+
+  html += "</table>";
+
+  document.getElementById("inventorySection").innerHTML = html;
+}
+
+
+// ==========================
+// ADD TO CART
+// ==========================
+function addToCart() {
+
+  let barcode = document.getElementById("barcodeInput").value;
+  let quantity = Number(document.getElementById("quantityInput").value);
+
+  let found = -1;
+
+  for (let i = 0; i < inventoryBarcodes.length; i++) {
+    if (inventoryBarcodes[i] === barcode) {
+      found = i;
+      break;
+    }
+  }
+
+  if (found === -1) {
+    alert("Invalid barcode");
+    return;
+  }
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    alert("Invalid quantity");
+    return;
+  }
+
+  if (inventoryStock[found] < quantity) {
+    alert("Not enough stock");
+    return;
+  }
+
+  cartIndexes.push(found);
+  cartQuantities.push(quantity);
+
+  viewCart();
+}
+
+
+// ==========================
+// VIEW CART
+// ==========================
+function viewCart() {
+
+  let html = "<table>";
+  html += "<tr><th>Name</th><th>Qty</th><th>Remove</th></tr>";
+
+  for (let i = 0; i < cartIndexes.length; i++) {
+    html += "<tr>";
+    html += "<td>"+inventoryNames[cartIndexes[i]]+"</td>";
+    html += "<td>"+cartQuantities[i]+"</td>";
+    html += "<td><button onclick='removeFromCart("+i+")'>X</button></td>";
+    html += "</tr>";
+  }
+
+  html += "</table>";
+
+  document.getElementById("cartSection").innerHTML = html;
+}
+
+
+// ==========================
+// REMOVE FROM CART
+// ==========================
+function removeFromCart(index) {
+  cartIndexes.splice(index,1);
+  cartQuantities.splice(index,1);
+  viewCart();
+}
+
+
+// ==========================
+// CHECKOUT
+// ==========================
+function checkout() {
+
+  if (cartIndexes.length === 0) {
+    alert("Cart is empty");
+    return;
+  }
+
+  let total = 0;
+
+  for (let i = 0; i < cartIndexes.length; i++) {
+
+    let idx = cartIndexes[i];
+    let qty = cartQuantities[i];
+
+    let subtotal = inventoryPrices[idx] * qty;
+    total += subtotal;
+
+    inventoryStock[idx] -= qty;
+  }
+
+  let tax = total * taxRate;
+  let grandTotal = total + tax;
+
+  storeRevenue += grandTotal;
+
+  cartIndexes = [];
+  cartQuantities = [];
+
+  saveData();
+  viewInventory();
+  viewCart();
+
+  alert("Checkout Complete! Total: $" + grandTotal.toFixed(2));
+}
+
+
+// ==========================
+// MANAGER AUDIT
+// ==========================
+function managerAudit() {
+
+  let password = document.getElementById("managerPass").value;
+
+  if (password !== "admin123") {
+    document.getElementById("auditResult").innerHTML = "Access Denied";
+    return;
+  }
+
+  document.getElementById("auditResult").innerHTML =
+    "Revenue: $" + storeRevenue.toFixed(2) +
+    " | Products: " + inventoryNames.length;
+}
+
+
+// INITIALIZE
+viewInventory();
+viewCart();
+
+</script>
+
+</body>
+</html>

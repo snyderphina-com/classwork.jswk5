@@ -25,7 +25,7 @@ function viewInventory() {
   console.log("===============================================");
 
   for (let i = 0; i < inventoryNames.length; i++) { //loops through all products.The .length gets number of items
-    let priceFormatted = "$" + inventoryPrices[i].toFixed(2);
+    let priceFormatted = `$${inventoryPrices[i]} .toFixed(2)`;
 
     console.log(
       i + "  | " + //the index,i.e, from zero

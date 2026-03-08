@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Legacy-Sync POS Engine v3.0</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid black; padding: 8px; text-align: center; }
+    button { padding: 8px 12px; margin-top: 10px; cursor: pointer; }
+    input { padding: 6px; margin: 5px; }
+    .manager { margin-top: 20px; padding: 10px; border: 2px solid black; }
+  </style>
+</head>
+<body>
+
+<h2>Legacy-Sync POS Engine</h2>
+
+<div id="inventorySection"></div>
+
+<h3>Process Sale</h3>
+<input type="text" id="barcodeInput" placeholder="Enter Barcode">
+<input type="number" id="quantityInput" placeholder="Quantity">
+<button onclick="processSale()">Scan & Sell</button>
+
+<h3 id="receipt"></h3>
+
+<div class="manager">
+  <h3>Manager Audit</h3>
+  <input type="password" id="managerPass" placeholder="Enter Password">
+  <button onclick="managerAudit()">Login</button>
+  <p id="auditResult"></p>
+</div>
+
+<script>
+
+// ===============================
+// DATA STORE (Parallel Arrays)
+// ===============================
+const inventoryNames = [
+  "Espresso Machine",
+  "Whole Bean Coffee",
+  "Industrial Drill",
+  "LED Monitor",
+  "Office Chair"
+];
+
+const inventoryPrices = [250.00, 18.50, 120.00, 200.00, 150.00];
+const inventoryStock = [5, 40, 10, 8, 15];
+const inventoryBarcodes = ["1001","1002","1003","1004","1005"];
+
+let storeRevenue = 0;
+const taxRate = 0.075;
+
+
+// ===============================
+// VIEW INVENTORY (DOM Version)
+// ===============================
+function viewInventory() {
+
+  let html = "<table>";
+  html += "<tr><th>ID</th><th>Name</th><th>Barcode</th><th>Price</th><th>Stock</th></tr>";
+
+  for (let i = 0; i < inventoryNames.length; i++) {
+    html += "<tr>";
+    html += "<td>" + i + "</td>";
+    html += "<td>" + inventoryNames[i] + "</td>";
+    html += "<td>" + inventoryBarcodes[i] + "</td>";
+    html += "<td>$" + inventoryPrices[i].toFixed(2) + "</td>";
+    html += "<td>" + inventoryStock[i] + "</td>";
+    html += "</tr>";
+  }
+
+  html += "</table>";
+
+  document.getElementById("inventorySection").innerHTML = html;
+}
+
+
+// ===============================
+// PROCESS SALE BY BARCODE
+// ===============================
+function processSale() {
+
+  let barcode = document.getElementById("barcodeInput").value;
+  let quantity = Number(document.getElementById("quantityInput").value);
+
+  let foundIndex = -1;
+
+  for (let i = 0; i < inventoryBarcodes.length; i++) {
+    if (inventoryBarcodes[i] === barcode) {
+      foundIndex = i;
+      break;
+    }
+  }
+
+  if (foundIndex === -1) {
+    alert("Invalid Barcode!");
+    return;
+  }
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    alert("Invalid Quantity!");
+    return;
+  }
+
+  if (inventoryStock[foundIndex] < quantity) {
+    alert("Not enough stock!");
+    return;
+  }
+
+  let unitPrice = inventoryPrices[foundIndex];
+  let subtotal = unitPrice * quantity;
+  let taxAmount = subtotal * taxRate;
+  let total = subtotal + taxAmount;
+
+  inventoryStock[foundIndex] -= quantity;
+  storeRevenue += total;
+
+  document.getElementById("receipt").innerHTML =
+    "Receipt: " +
+    inventoryNames[foundIndex] +
+    " | Unit Price: $" + unitPrice.toFixed(2) +
+    " | Quantity: " + quantity +
+    " | Total: $" + total.toFixed(2);
+
+  viewInventory();
+}
+
+
+// ===============================
+// MANAGER AUDIT
+// ===============================
+function managerAudit() {
+
+  let password = document.getElementById("managerPass").value;
+
+  if (password !== "admin123") {
+    document.getElementById("auditResult").innerHTML = "Access Denied";
+    return;
+  }
+
+  document.getElementById("auditResult").innerHTML =
+    "Total Revenue: $" + storeRevenue.toFixed(2) +
+    " | Total Products: " + inventoryNames.length;
+}
+
+
+// INITIAL LOAD
+viewInventory();
+
+</script>
+
+</body>
+</html>
